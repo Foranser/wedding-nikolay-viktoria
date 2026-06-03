@@ -1004,3 +1004,59 @@ fieldset {
     radial-gradient(circle at 92% 12%, rgba(201, 225, 220, 0.24) 0 85px, transparent 180px),
     linear-gradient(135deg, rgba(255,255,255,0.98), rgba(247,255,252,0.94));
 }
+
+/* Исправление смещения заголовков в форме на мобильной версии */
+
+.rsvp-form fieldset {
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  padding: 22px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.rsvp-form fieldset legend {
+  float: left;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 0;
+  line-height: 1.35;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.rsvp-form fieldset::after {
+  content: '';
+  display: block;
+  clear: both;
+}
+
+.rsvp-form .guest-help {
+  clear: both;
+}
+
+.rsvp-form label {
+  display: block;
+}
+
+.rsvp-form textarea {
+  resize: vertical;
+}
+
+@media (max-width: 520px) {
+  .rsvp-form fieldset {
+    padding: 20px;
+    border-radius: 22px;
+  }
+
+  .rsvp-form fieldset legend {
+    font-size: 17px;
+    margin-bottom: 12px;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
