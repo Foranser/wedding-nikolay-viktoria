@@ -1062,31 +1062,35 @@ fieldset {
 }
 
 
-/* Исправление фоновых детских фото на телефоне */
+/* Детские фото на телефоне: размещаем за именами, а не под текстом */
 
 @media (max-width: 520px) {
   .hero {
     min-height: 100vh;
-    padding: 24px 18px;
-    align-items: flex-start;
+    padding: 24px 18px 70px;
+    align-items: center;
   }
 
   .hero-content {
-    padding-top: 105px;
+    padding-top: 85px;
     max-width: 100%;
     z-index: 3;
   }
 
   .hero h1 {
+    position: relative;
+    z-index: 4;
     font-size: 82px;
     line-height: 0.9;
-    margin: 18px 0;
+    margin: 18px 0 22px;
   }
 
   .date {
+    position: relative;
+    z-index: 4;
     font-size: 18px;
     padding: 9px 20px;
-    margin-bottom: 22px;
+    margin-bottom: 24px;
   }
 
   .hero-text {
@@ -1095,8 +1099,8 @@ fieldset {
     margin: 0 auto 24px;
     padding: 18px 16px;
     border-radius: 26px;
-    background: rgba(255, 255, 255, 0.58);
-    backdrop-filter: blur(5px);
+    background: rgba(255, 255, 255, 0.62);
+    backdrop-filter: blur(6px);
     color: #6f625d;
     line-height: 1.65;
   }
@@ -1106,25 +1110,25 @@ fieldset {
   }
 
   .hero-memories {
-    z-index: 1;
+    z-index: 2;
   }
 
   .hero-memory {
-    top: auto;
-    bottom: 70px;
-    width: 43vw;
-    height: 240px;
-    opacity: 0.18;
+    top: 275px;
+    bottom: auto;
+    width: 42vw;
+    height: 210px;
+    opacity: 0.22;
     transform: none;
     border-radius: 24px;
   }
 
   .memory-left {
-    left: 4%;
+    left: 5%;
   }
 
   .memory-right {
-    right: 4%;
+    right: 5%;
   }
 
   .hero .btn {
