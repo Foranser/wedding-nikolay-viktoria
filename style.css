@@ -1062,7 +1062,8 @@ fieldset {
 }
 
 
-/* Детские фото на телефоне: размещаем за именами, а не под текстом */
+/* Правка главного экрана на телефоне:
+   фото выше, плашку под текстом убираем */
 
 @media (max-width: 520px) {
   .hero {
@@ -1074,7 +1075,7 @@ fieldset {
   .hero-content {
     padding-top: 85px;
     max-width: 100%;
-    z-index: 3;
+    z-index: 4;
   }
 
   .hero h1 {
@@ -1082,12 +1083,12 @@ fieldset {
     z-index: 4;
     font-size: 82px;
     line-height: 0.9;
-    margin: 18px 0 22px;
+    margin: 18px 0 20px;
   }
 
   .date {
     position: relative;
-    z-index: 4;
+    z-index: 5;
     font-size: 18px;
     padding: 9px 20px;
     margin-bottom: 24px;
@@ -1095,14 +1096,15 @@ fieldset {
 
   .hero-text {
     position: relative;
-    z-index: 4;
-    margin: 0 auto 24px;
-    padding: 18px 16px;
-    border-radius: 26px;
-    background: rgba(255, 255, 255, 0.62);
-    backdrop-filter: blur(6px);
+    z-index: 5;
+    margin: 0 auto 26px;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    backdrop-filter: none;
     color: #6f625d;
     line-height: 1.65;
+    text-shadow: none;
   }
 
   .hero-note {
@@ -1114,11 +1116,11 @@ fieldset {
   }
 
   .hero-memory {
-    top: 275px;
+    top: 240px;
     bottom: auto;
     width: 42vw;
     height: 210px;
-    opacity: 0.22;
+    opacity: 0.20;
     transform: none;
     border-radius: 24px;
   }
@@ -1133,6 +1135,6 @@ fieldset {
 
   .hero .btn {
     position: relative;
-    z-index: 4;
+    z-index: 5;
   }
 }
