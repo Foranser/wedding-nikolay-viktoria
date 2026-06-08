@@ -1,7 +1,4 @@
-// Вставьте сюда ссылку Google Apps Script после публикации веб-приложения.
-// Пример: const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/ВАШ_АДРЕС/exec';
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzmNgbpFc2aZhzPi9uHiGalT4lmlhqvAUM7lMdq_is5kSh2Ek1XJxWbtP3j_V_vWzO5_Q/exec';
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/ТВОЯ_ССЫЛКА/exec';
+const API_URL = 'https://fancy-cloud-7d5f.dforanser.workers.dev/';
 
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('rsvpForm');
@@ -68,8 +65,12 @@ document.addEventListener('DOMContentLoaded', () => {
     updateGuestTitles();
   }
 
-  function createSubmissionId() {
-    return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  function collectEventsText() {
+    const checkedEvents = Array.from(form.querySelectorAll('input[name="events"]:checked'));
+
+    return checkedEvents
+      .map((checkbox) => checkbox.value)
+      .join(', ');
   }
 
   function collectAdditionalGuests() {
@@ -81,7 +82,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const name = input.value.trim();
         const relation = guestRelations[index] ? guestRelations[index].value.trim() : '';
 
-        return { name, relation };
+        return {
+          name,
+          relation
+        };
       })
       .filter((guest) => guest.name || guest.relation);
 
@@ -97,32 +101,6 @@ document.addEventListener('DOMContentLoaded', () => {
       text: guests
         .map((guest, index) => `${index + 1}. ${guest.name} — ${guest.relation}`)
         .join('; ')
-    };
-  }
-
-  function collectEventsText() {
-    const checkedEvents = Array.from(form.querySelectorAll('input[name="events"]:checked'));
-
-    return checkedEvents
-      .map((checkbox) => checkbox.value)
-      .join(', ');
-  }
-
-  function collectFormData() {
-    const formData = new FormData(form);
-    const guestsInfo = collectAdditionalGuests();
-
-    return {
-      submissionId: createSubmissionId(),
-      submittedAt: new Date().toLocaleString('ru-RU'),
-      name: formData.get('name') || '',
-      attendance: formData.get('attendance') || '',
-      events: collectEventsText(),
-      guestsCount: String(guestsInfo.count),
-      guests: guestsInfo.text,
-      food: formData.get('food') || '',
-      message: formData.get('message') || '',
-      source: 'site'
     };
   }
 
@@ -158,36 +136,21 @@ document.addEventListener('DOMContentLoaded', () => {
     return true;
   }
 
-  function sendByFetch(data) {
-    const payload = new URLSearchParams();
+  function collectFormData() {
+    const formData = new FormData(form);
+    const guestsInfo = collectAdditionalGuests();
 
-    Object.entries(data).forEach(([key, value]) => {
-      payload.append(key, value);
-    });
-
-    return fetch(GOOGLE_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: payload
-    });
-  }
-
-  function sendByImageFallback(data) {
-    const params = new URLSearchParams();
-
-    Object.entries(data).forEach(([key, value]) => {
-      params.append(key, value);
-    });
-
-    const img = new Image();
-    img.style.display = 'none';
-    img.src = `${GOOGLE_SCRIPT_URL}?${params.toString()}`;
-
-    document.body.appendChild(img);
-
-    setTimeout(() => {
-      img.remove();
-    }, 5000);
+    return {
+      submissionId: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+      submittedAt: new Date().toLocaleString('ru-RU'),
+      name: formData.get('name') || '',
+      attendance: formData.get('attendance') || '',
+      events: collectEventsText(),
+      guestsCount: String(guestsInfo.count),
+      guests: guestsInfo.text,
+      food: formData.get('food') || '',
+      message: formData.get('message') || ''
+    };
   }
 
   addGuestBtn.addEventListener('click', () => {
@@ -197,8 +160,8 @@ document.addEventListener('DOMContentLoaded', () => {
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
 
-    if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes('ТВОЯ_ССЫЛКА')) {
-      statusText.textContent = 'Не вставлена ссылка Google Apps Script в script.js.';
+    if (!API_URL || API_URL.includes('ТВОЙ-WORKER')) {
+      statusText.textContent = 'Не вставлена ссылка Cloudflare Worker в script.js.';
       statusText.style.color = '#9b3f35';
       return;
     }
@@ -213,24 +176,27 @@ document.addEventListener('DOMContentLoaded', () => {
     statusText.style.color = '#7b6e66';
 
     try {
-      sendByImageFallback(data);
-      await sendByFetch(data);
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
 
-      setTimeout(() => {
-        form.reset();
-        guestsContainer.innerHTML = '';
-        statusText.textContent = 'Спасибо! Ваш ответ отправлен.';
-        statusText.style.color = '#4f7b56';
-      }, 1200);
+      if (!response.ok) {
+        throw new Error('Ошибка отправки');
+      }
+
+      form.reset();
+      guestsContainer.innerHTML = '';
+
+      statusText.textContent = 'Спасибо! Ваш ответ отправлен.';
+      statusText.style.color = '#4f7b56';
     } catch (error) {
-      sendByImageFallback(data);
-
-      setTimeout(() => {
-        form.reset();
-        guestsContainer.innerHTML = '';
-        statusText.textContent = 'Спасибо! Ваш ответ отправлен.';
-        statusText.style.color = '#4f7b56';
-      }, 1500);
+      console.error(error);
+      statusText.textContent = 'Не получилось отправить ответ. Попробуйте ещё раз.';
+      statusText.style.color = '#9b3f35';
     }
   });
 });
