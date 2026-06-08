@@ -1,4 +1,15 @@
-const API_URL = 'https://fancy-cloud-7d5f.dforanser.workers.dev/';
+const GOOGLE_FORM_ACTION_URL = 'https://docs.google.com/forms/u/0/d/e/1FAIpQLScMWSrPMhKu6U-8deYs5rPoZ8znSk9GVCUBRDHbOXw4sMOaEA/formResponse';
+
+const FORM_FIELDS = {
+  submittedAt: 'entry.364088573',
+  name: 'entry.1471927501',
+  attendance: 'entry.729155505',
+  events: 'entry.1891984378',
+  guestsCount: 'entry.1819079521',
+  guests: 'entry.480183133',
+  food: 'entry.1771740903',
+  message: 'entry.112683149'
+};
 
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('rsvpForm');
@@ -9,6 +20,47 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!form || !statusText || !guestsContainer || !addGuestBtn) {
     console.error('Не найдены элементы формы.');
     return;
+  }
+
+  function getOrCreateIframe() {
+    let iframe = document.getElementById('googleFormFrame');
+
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.name = 'googleFormFrame';
+      iframe.id = 'googleFormFrame';
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+    }
+
+    return iframe;
+  }
+
+  function createHiddenGoogleForm() {
+    let googleForm = document.getElementById('hiddenGoogleForm');
+
+    if (googleForm) {
+      googleForm.remove();
+    }
+
+    googleForm = document.createElement('form');
+    googleForm.id = 'hiddenGoogleForm';
+    googleForm.action = GOOGLE_FORM_ACTION_URL;
+    googleForm.method = 'POST';
+    googleForm.target = 'googleFormFrame';
+    googleForm.style.display = 'none';
+
+    document.body.appendChild(googleForm);
+
+    return googleForm;
+  }
+
+  function addHiddenField(targetForm, name, value) {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = name;
+    input.value = value || '';
+    targetForm.appendChild(input);
   }
 
   function updateGuestTitles() {
@@ -141,7 +193,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const guestsInfo = collectAdditionalGuests();
 
     return {
-      submissionId: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
       submittedAt: new Date().toLocaleString('ru-RU'),
       name: formData.get('name') || '',
       attendance: formData.get('attendance') || '',
@@ -157,14 +208,8 @@ document.addEventListener('DOMContentLoaded', () => {
     createGuestCard();
   });
 
-  form.addEventListener('submit', async (event) => {
+  form.addEventListener('submit', (event) => {
     event.preventDefault();
-
-    if (!API_URL || API_URL.includes('ТВОЙ-WORKER')) {
-      statusText.textContent = 'Не вставлена ссылка Cloudflare Worker в script.js.';
-      statusText.style.color = '#9b3f35';
-      return;
-    }
 
     if (!validateForm()) {
       return;
@@ -172,31 +217,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const data = collectFormData();
 
+    getOrCreateIframe();
+
+    const googleForm = createHiddenGoogleForm();
+
+    addHiddenField(googleForm, FORM_FIELDS.submittedAt, data.submittedAt);
+    addHiddenField(googleForm, FORM_FIELDS.name, data.name);
+    addHiddenField(googleForm, FORM_FIELDS.attendance, data.attendance);
+    addHiddenField(googleForm, FORM_FIELDS.events, data.events);
+    addHiddenField(googleForm, FORM_FIELDS.guestsCount, data.guestsCount);
+    addHiddenField(googleForm, FORM_FIELDS.guests, data.guests);
+    addHiddenField(googleForm, FORM_FIELDS.food, data.food);
+    addHiddenField(googleForm, FORM_FIELDS.message, data.message);
+
     statusText.textContent = 'Отправляем ответ...';
     statusText.style.color = '#7b6e66';
 
-    try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      });
+    HTMLFormElement.prototype.submit.call(googleForm);
 
-      if (!response.ok) {
-        throw new Error('Ошибка отправки');
-      }
-
+    setTimeout(() => {
       form.reset();
       guestsContainer.innerHTML = '';
-
       statusText.textContent = 'Спасибо! Ваш ответ отправлен.';
       statusText.style.color = '#4f7b56';
-    } catch (error) {
-      console.error(error);
-      statusText.textContent = 'Не получилось отправить ответ. Попробуйте ещё раз.';
-      statusText.style.color = '#9b3f35';
-    }
+    }, 1500);
   });
 });
