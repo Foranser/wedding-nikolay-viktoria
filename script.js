@@ -9,9 +9,60 @@ document.addEventListener('DOMContentLoaded', () => {
   const addGuestBtn = document.getElementById('addGuestBtn');
 
   if (!form || !statusText || !guestsContainer || !addGuestBtn) {
-    console.error('Ошибка: не найдены элементы формы.');
+    console.error('Ошибка: не найдены элементы формы. Проверь id: rsvpForm, formStatus, additionalGuests, addGuestBtn.');
     return;
   }
+
+  let submitStarted = false;
+
+  function getOrCreateHiddenInput(name, id) {
+    let input = document.getElementById(id);
+
+    if (!input) {
+      input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = name;
+      input.id = id;
+      form.appendChild(input);
+    }
+
+    return input;
+  }
+
+  function getOrCreateIframe() {
+    let iframe = document.getElementById('googleSheetFrame');
+
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.name = 'googleSheetFrame';
+      iframe.id = 'googleSheetFrame';
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+    }
+
+    return iframe;
+  }
+
+  const submittedAtField = getOrCreateHiddenInput('submittedAt', 'submittedAtField');
+  const eventsTextField = getOrCreateHiddenInput('eventsText', 'eventsTextField');
+  const guestsCountField = getOrCreateHiddenInput('guestsCount', 'guestsCountField');
+  const guestsTextField = getOrCreateHiddenInput('guestsText', 'guestsTextField');
+
+  const iframe = getOrCreateIframe();
+
+  iframe.addEventListener('load', () => {
+    if (!submitStarted) {
+      return;
+    }
+
+    form.reset();
+    guestsContainer.innerHTML = '';
+
+    statusText.textContent = 'Спасибо! Ваш ответ отправлен.';
+    statusText.style.color = '#4f7b56';
+
+    submitStarted = false;
+  });
 
   function updateGuestTitles() {
     const cards = guestsContainer.querySelectorAll('.guest-card');
@@ -67,27 +118,77 @@ document.addEventListener('DOMContentLoaded', () => {
     updateGuestTitles();
   }
 
-  function collectGuestsText() {
-    const formData = new FormData(form);
-
-    const guestNames = formData.getAll('guestName');
-    const guestRelations = formData.getAll('guestRelation');
+  function collectAdditionalGuests() {
+    const guestNames = Array.from(form.querySelectorAll('input[name="guestName"]'));
+    const guestRelations = Array.from(form.querySelectorAll('select[name="guestRelation"]'));
 
     const guests = guestNames
-      .map((name, index) => ({
-        name: (name || '').trim(),
-        relation: (guestRelations[index] || '').trim()
-      }))
+      .map((input, index) => {
+        const name = input.value.trim();
+        const relation = guestRelations[index] ? guestRelations[index].value.trim() : '';
+
+        return {
+          name,
+          relation
+        };
+      })
       .filter((guest) => guest.name || guest.relation);
 
-    const guestsText = guests.length
-      ? guests.map((guest, index) => `${index + 1}. ${guest.name} — ${guest.relation}`).join('; ')
-      : 'Без дополнительных гостей';
+    if (guests.length === 0) {
+      return {
+        count: 0,
+        text: 'Без дополнительных гостей'
+      };
+    }
 
     return {
-      guestsCount: String(guests.length),
-      guestsText
+      count: guests.length,
+      text: guests
+        .map((guest, index) => `${index + 1}. ${guest.name} — ${guest.relation}`)
+        .join('; ')
     };
+  }
+
+  function collectEventsText() {
+    const checkedEvents = Array.from(form.querySelectorAll('input[name="events"]:checked'));
+
+    if (checkedEvents.length === 0) {
+      return '';
+    }
+
+    return checkedEvents.map((checkbox) => checkbox.value).join(', ');
+  }
+
+  function validateForm() {
+    const nameInput = form.querySelector('input[name="name"]');
+    const attendanceSelect = form.querySelector('select[name="attendance"]');
+
+    if (!nameInput || !nameInput.value.trim()) {
+      statusText.textContent = 'Пожалуйста, укажите ваше имя и фамилию.';
+      statusText.style.color = '#9b3f35';
+      return false;
+    }
+
+    if (!attendanceSelect || !attendanceSelect.value) {
+      statusText.textContent = 'Пожалуйста, выберите, сможете ли вы присутствовать.';
+      statusText.style.color = '#9b3f35';
+      return false;
+    }
+
+    const guestCards = guestsContainer.querySelectorAll('.guest-card');
+
+    for (const card of guestCards) {
+      const guestName = card.querySelector('input[name="guestName"]');
+      const guestRelation = card.querySelector('select[name="guestRelation"]');
+
+      if (!guestName.value.trim() || !guestRelation.value) {
+        statusText.textContent = 'Заполните имя и кем приходится каждый добавленный гость.';
+        statusText.style.color = '#9b3f35';
+        return false;
+      }
+    }
+
+    return true;
   }
 
   addGuestBtn.addEventListener('click', () => {
@@ -97,51 +198,43 @@ document.addEventListener('DOMContentLoaded', () => {
   form.addEventListener('submit', (event) => {
     event.preventDefault();
 
-    if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes('ВСТАВЬ_СЮДА')) {
+    if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes('ТВОЯ_ССЫЛКА')) {
       statusText.textContent = 'Не вставлена ссылка Google Apps Script в script.js.';
       statusText.style.color = '#9b3f35';
       return;
     }
 
-    const formData = new FormData(form);
-
-    const name = formData.get('name');
-    const attendance = formData.get('attendance');
-
-    if (!name || !attendance) {
-      statusText.textContent = 'Заполните имя и выберите, сможете ли присутствовать.';
-      statusText.style.color = '#9b3f35';
+    if (!validateForm()) {
       return;
     }
 
-    const selectedEvents = formData.getAll('events').join(', ');
-    const guestsInfo = collectGuestsText();
+    const guestsInfo = collectAdditionalGuests();
 
-    const payload = new URLSearchParams();
+    submittedAtField.value = new Date().toLocaleString('ru-RU');
+    eventsTextField.value = collectEventsText();
+    guestsCountField.value = String(guestsInfo.count);
+    guestsTextField.value = guestsInfo.text;
 
-    payload.append('submittedAt', new Date().toLocaleString('ru-RU'));
-    payload.append('name', name || '');
-    payload.append('attendance', attendance || '');
-    payload.append('events', selectedEvents || '');
-    payload.append('guestsCount', guestsInfo.guestsCount);
-    payload.append('guests', guestsInfo.guestsText);
-    payload.append('food', formData.get('food') || '');
-    payload.append('message', formData.get('message') || '');
+    form.action = GOOGLE_SCRIPT_URL;
+    form.method = 'POST';
+    form.target = 'googleSheetFrame';
 
     statusText.textContent = 'Отправляем ответ...';
     statusText.style.color = '#7b6e66';
 
-    fetch(GOOGLE_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: payload
-    });
+    submitStarted = true;
+
+    HTMLFormElement.prototype.submit.call(form);
 
     setTimeout(() => {
-      form.reset();
-      guestsContainer.innerHTML = '';
-      statusText.textContent = 'Спасибо! Ответ отправлен.';
-      statusText.style.color = '#4f7b56';
-    }, 1200);
+      if (submitStarted) {
+        statusText.textContent = 'Ответ отправлен. Если запись не появилась сразу, обновите таблицу через несколько секунд.';
+        statusText.style.color = '#4f7b56';
+        submitStarted = false;
+
+        form.reset();
+        guestsContainer.innerHTML = '';
+      }
+    }, 2500);
   });
 });
