@@ -8,8 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const guestsContainer = document.getElementById('additionalGuests');
   const addGuestBtn = document.getElementById('addGuestBtn');
 
-  if (!form  !statusText  !guestsContainer || !addGuestBtn) {
-    console.error('Не найдены элементы формы. Проверьте id в index.html.');
+  if (!form || !statusText || !guestsContainer || !addGuestBtn) {
+    console.error('Ошибка: не найдены элементы формы.');
     return;
   }
 
@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const title = card.querySelector('.guest-card-title');
 
       if (title) {
-        title.textContent = Гость ${index + 1};
+        title.textContent = `Гость ${index + 1}`;
       }
     });
   }
@@ -67,10 +67,8 @@ document.addEventListener('DOMContentLoaded', () => {
     updateGuestTitles();
   }
 
-  function collectFormData() {
+  function collectGuestsText() {
     const formData = new FormData(form);
-
-    const selectedEvents = formData.getAll('events').join(', ');
 
     const guestNames = formData.getAll('guestName');
     const guestRelations = formData.getAll('guestRelation');
@@ -87,14 +85,8 @@ document.addEventListener('DOMContentLoaded', () => {
       : 'Без дополнительных гостей';
 
     return {
-      submittedAt: new Date().toLocaleString('ru-RU'),
-      name: formData.get('name') || '',
-      attendance: formData.get('attendance') || '',
-      events: selectedEvents || '',
       guestsCount: String(guests.length),
-      guests: guestsText,
-      food: formData.get('food') || '',
-      message: formData.get('message') || ''
+      guestsText
     };
   }
 
@@ -105,29 +97,51 @@ document.addEventListener('DOMContentLoaded', () => {
   form.addEventListener('submit', (event) => {
     event.preventDefault();
 
-    if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes('ТВОЯ_ССЫЛКА')) {
+    if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes('ВСТАВЬ_СЮДА')) {
       statusText.textContent = 'Не вставлена ссылка Google Apps Script в script.js.';
       statusText.style.color = '#9b3f35';
       return;
     }
 
-    const data = collectFormData();
+    const formData = new FormData(form);
 
-    if (!data.name || !data.attendance) {
+    const name = formData.get('name');
+    const attendance = formData.get('attendance');
+
+    if (!name || !attendance) {
       statusText.textContent = 'Заполните имя и выберите, сможете ли присутствовать.';
       statusText.style.color = '#9b3f35';
       return;
     }
 
+    const selectedEvents = formData.getAll('events').join(', ');
+    const guestsInfo = collectGuestsText();
+
+    const payload = new URLSearchParams();
+
+    payload.append('submittedAt', new Date().toLocaleString('ru-RU'));
+    payload.append('name', name || '');
+    payload.append('attendance', attendance || '');
+    payload.append('events', selectedEvents || '');
+    payload.append('guestsCount', guestsInfo.guestsCount);
+    payload.append('guests', guestsInfo.guestsText);
+    payload.append('food', formData.get('food') || '');
+    payload.append('message', formData.get('message') || '');
+
     statusText.textContent = 'Отправляем ответ...';
     statusText.style.color = '#7b6e66';
 
-    const params = new URLSearchParams();
-
-    Object.entries(data).forEach(([key, value]) => {
-      params.append(key, value);
+    fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      body: payload
     });
 
-    window.location.href = ${GOOGLE_SCRIPT_URL}?${params.toString()};
+    setTimeout(() => {
+      form.reset();
+      guestsContainer.innerHTML = '';
+      statusText.textContent = 'Спасибо! Ответ отправлен.';
+      statusText.style.color = '#4f7b56';
+    }, 1200);
   });
 });
