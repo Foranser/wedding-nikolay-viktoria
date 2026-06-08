@@ -2,123 +2,132 @@
 // Пример: const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/ВАШ_АДРЕС/exec';
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzmNgbpFc2aZhzPi9uHiGalT4lmlhqvAUM7lMdq_is5kSh2Ek1XJxWbtP3j_V_vWzO5_Q/exec';
 
-const form = document.getElementById('rsvpForm');
-const statusText = document.getElementById('formStatus');
-const guestsContainer = document.getElementById('additionalGuests');
-const addGuestBtn = document.getElementById('addGuestBtn');
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('rsvpForm');
+  const statusText = document.getElementById('formStatus');
+  const guestsContainer = document.getElementById('additionalGuests');
+  const addGuestBtn = document.getElementById('addGuestBtn');
 
-function updateGuestTitles() {
-  const cards = guestsContainer.querySelectorAll('.guest-card');
+  if (!form  !statusText  !guestsContainer || !addGuestBtn) {
+    console.error('Не найдены элементы формы. Проверьте id в index.html.');
+    return;
+  }
 
-  cards.forEach((card, index) => {
-    const title = card.querySelector('.guest-card-title');
+  function updateGuestTitles() {
+    const cards = guestsContainer.querySelectorAll('.guest-card');
 
-    if (title) {
-      title.textContent = Гость ${index + 1};
-    }
-  });
-}
+    cards.forEach((card, index) => {
+      const title = card.querySelector('.guest-card-title');
 
-function createGuestCard() {
-  const card = document.createElement('div');
-  card.className = 'guest-card';
+      if (title) {
+        title.textContent = Гость ${index + 1};
+      }
+    });
+  }
 
-  card.innerHTML = `
-    <div class="guest-card-title">Гость</div>
+  function createGuestCard() {
+    const card = document.createElement('div');
+    card.className = 'guest-card';
 
-    <label>
-      Имя гостя
-      <input type="text" name="guestName" placeholder="Например: Анна Петрова" required>
-    </label>
+    card.innerHTML = `
+      <div class="guest-card-title">Гость</div>
 
-    <label>
-      Кем приходится
-      <select name="guestRelation" required>
-        <option value="" disabled selected>Выберите вариант</option>
-        <option>Муж</option>
-        <option>Жена</option>
-        <option>Ребёнок</option>
-        <option>Сын</option>
-        <option>Дочь</option>
-        <option>Друг</option>
-        <option>Подруга</option>
-        <option>Родственник</option>
-        <option>Другое</option>
-      </select>
-    </label>
+      <label>
+        Имя гостя
+        <input type="text" name="guestName" placeholder="Например: Анна Петрова" required>
+      </label>
 
-    <button class="remove-guest-btn" type="button" aria-label="Удалить гостя">×</button>
-  `;
+      <label>
+        Кем приходится
+        <select name="guestRelation" required>
+          <option value="" disabled selected>Выберите вариант</option>
+          <option>Муж</option>
+          <option>Жена</option>
+          <option>Ребёнок</option>
+          <option>Сын</option>
+          <option>Дочь</option>
+          <option>Друг</option>
+          <option>Подруга</option>
+          <option>Родственник</option>
+          <option>Другое</option>
+        </select>
+      </label>
 
-  const removeBtn = card.querySelector('.remove-guest-btn');
+      <button class="remove-guest-btn" type="button" aria-label="Удалить гостя">×</button>
+    `;
 
-  removeBtn.addEventListener('click', () => {
-    card.remove();
+    const removeBtn = card.querySelector('.remove-guest-btn');
+
+    removeBtn.addEventListener('click', () => {
+      card.remove();
+      updateGuestTitles();
+    });
+
+    guestsContainer.appendChild(card);
     updateGuestTitles();
-  });
-
-  guestsContainer.appendChild(card);
-  updateGuestTitles();
-}
-
-function collectFormData() {
-  const formData = new FormData(form);
-
-  const selectedEvents = formData.getAll('events').join(', ');
-
-  const guestNames = formData.getAll('guestName');
-  const guestRelations = formData.getAll('guestRelation');
-
-  const guests = guestNames
-    .map((name, index) => ({
-      name: (name || '').trim(),
-      relation: (guestRelations[index] || '').trim()
-    }))
-    .filter((guest) => guest.name || guest.relation);
-
-  const guestsText = guests.length
-    ? guests.map((guest, index) => `${index + 1}. ${guest.name} — ${guest.relation}`).join('; ')
-    : 'Без дополнительных гостей';
-
-  return {
-    submittedAt: new Date().toLocaleString('ru-RU'),
-    name: formData.get('name') || '',
-    attendance: formData.get('attendance') || '',
-    events: selectedEvents || '',
-    guestsCount: String(guests.length),
-    guests: guestsText,
-    food: formData.get('food') || '',
-    message: formData.get('message') || ''
-  };
-}
-
-addGuestBtn.addEventListener('click', createGuestCard);
-
-form.addEventListener('submit', (event) => {
-  event.preventDefault();
-
-  if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes('СЮДА_ВСТАВЬ')) {
-    statusText.textContent = 'Не вставлена ссылка Google Apps Script в script.js.';
-    statusText.style.color = '#9b3f35';
-    return;
   }
 
-  const data = collectFormData();
+  function collectFormData() {
+    const formData = new FormData(form);
 
-  if (!data.name || !data.attendance) {
-    statusText.textContent = 'Заполните имя и выберите, сможете ли присутствовать.';
-    statusText.style.color = '#9b3f35';
-    return;
+    const selectedEvents = formData.getAll('events').join(', ');
+
+    const guestNames = formData.getAll('guestName');
+    const guestRelations = formData.getAll('guestRelation');
+
+    const guests = guestNames
+      .map((name, index) => ({
+        name: (name || '').trim(),
+        relation: (guestRelations[index] || '').trim()
+      }))
+      .filter((guest) => guest.name || guest.relation);
+
+    const guestsText = guests.length
+      ? guests.map((guest, index) => `${index + 1}. ${guest.name} — ${guest.relation}`).join('; ')
+      : 'Без дополнительных гостей';
+
+    return {
+      submittedAt: new Date().toLocaleString('ru-RU'),
+      name: formData.get('name') || '',
+      attendance: formData.get('attendance') || '',
+      events: selectedEvents || '',
+      guestsCount: String(guests.length),
+      guests: guestsText,
+      food: formData.get('food') || '',
+      message: formData.get('message') || ''
+    };
   }
 
-  statusText.textContent = 'Отправляем ответ...';
-  statusText.style.color = '#7b6e66';
-
-  const params = new URLSearchParams();
-
-  Object.entries(data).forEach(([key, value]) => {
-    params.append(key, value);
+  addGuestBtn.addEventListener('click', () => {
+    createGuestCard();
   });
 
-  window.location.href = ${GOOGLE_SCRIPT_URL}?${params.toString()};
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes('ТВОЯ_ССЫЛКА')) {
+      statusText.textContent = 'Не вставлена ссылка Google Apps Script в script.js.';
+      statusText.style.color = '#9b3f35';
+      return;
+    }
+
+    const data = collectFormData();
+
+    if (!data.name || !data.attendance) {
+      statusText.textContent = 'Заполните имя и выберите, сможете ли присутствовать.';
+      statusText.style.color = '#9b3f35';
+      return;
+    }
+
+    statusText.textContent = 'Отправляем ответ...';
+    statusText.style.color = '#7b6e66';
+
+    const params = new URLSearchParams();
+
+    Object.entries(data).forEach(([key, value]) => {
+      params.append(key, value);
+    });
+
+    window.location.href = ${GOOGLE_SCRIPT_URL}?${params.toString()};
+  });
 });
