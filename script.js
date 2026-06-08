@@ -228,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setTimeout(() => {
       if (submitStarted) {
-        statusText.textContent = 'Ответ отправлен. Если запись не появилась сразу, обновите таблицу через несколько секунд.';
+        statusText.textContent = 'Ответ отправлен.';
         statusText.style.color = '#4f7b56';
         submitStarted = false;
 
