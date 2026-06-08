@@ -2,7 +2,6 @@
 // Пример: const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/ВАШ_АДРЕС/exec';
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzmNgbpFc2aZhzPi9uHiGalT4lmlhqvAUM7lMdq_is5kSh2Ek1XJxWbtP3j_V_vWzO5_Q/exec';
 
-
 const form = document.getElementById('rsvpForm');
 const statusText = document.getElementById('formStatus');
 const guestsContainer = document.getElementById('additionalGuests');
@@ -93,28 +92,6 @@ function collectFormData() {
   };
 }
 
-function sendToGoogleSheet(data) {
-  const params = new URLSearchParams();
-
-  Object.entries(data).forEach(([key, value]) => {
-    params.append(key, value);
-  });
-
-  const requestUrl = ${GOOGLE_SCRIPT_URL}?${params.toString()};
-
-  let iframe = document.getElementById('googleSheetFrame');
-
-  if (!iframe) {
-    iframe = document.createElement('iframe');
-    iframe.name = 'googleSheetFrame';
-    iframe.id = 'googleSheetFrame';
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
-  }
-
-  iframe.src = requestUrl;
-}
-
 addGuestBtn.addEventListener('click', createGuestCard);
 
 form.addEventListener('submit', (event) => {
@@ -137,13 +114,11 @@ form.addEventListener('submit', (event) => {
   statusText.textContent = 'Отправляем ответ...';
   statusText.style.color = '#7b6e66';
 
-  sendToGoogleSheet(data);
+  const params = new URLSearchParams();
 
-  setTimeout(() => {
-    form.reset();
-    guestsContainer.innerHTML = '';
-    statusText.textContent = 'Спасибо! Ответ отправлен.';
-    statusText.style.color = '#4f7b56';
-  }, 1500);
-});
+  Object.entries(data).forEach(([key, value]) => {
+    params.append(key, value);
+  });
+
+  window.location.href = ${GOOGLE_SCRIPT_URL}?${params.toString()};
 });
